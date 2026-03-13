@@ -3,6 +3,7 @@ import { chunkDiff } from "../../utils/chunkDiff.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import { formatReviewComment, postSummaryComment } from "../../services/githubService.js";
+import { createTokenTracker } from "../../utils/tokenCounter.js";
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ const openai = new OpenAI({
 let isInitialized = false;
 
 export async function runPRReview({ repo, prNumber }) {
+  const tokens = createTokenTracker();
+
   if (!isInitialized) {
     await initMcpClients();
     isInitialized = true;
@@ -27,12 +30,14 @@ export async function runPRReview({ repo, prNumber }) {
   const diffText = diffResponse.content[0].text;
 
   if (!diffText || diffText.trim() === "") {
-    return { reviews: [], diffText: "", prSummary: [] };
+    return { reviews: [], diffText: "", prSummary: [], tokenReport: tokens.getReport() };
   }
 
   // --- Generate PR summary comment ---
   console.log(`[Orchestrator] Generating PR summary for ${repo}#${prNumber}...`);
   const prSummary = await generatePRSummary(diffText);
+  tokens.trackSummary(diffText, prSummary);
+
   if (prSummary.length > 0) {
     console.log(`[Orchestrator] Posting PR summary comment...`);
     await postSummaryComment(repo, prNumber, prSummary);
@@ -58,6 +63,7 @@ export async function runPRReview({ repo, prNumber }) {
     // 2. Perform AI Review with enhanced prompt
     console.log(`[Orchestrator] Sent chunk ${i + 1} to LLM...`);
     const reviewJsonRaw = await reviewCodeWithLLM(chunk, ragContext);
+    tokens.trackChunk(i, chunk, reviewJsonRaw);
     allReviews.push(reviewJsonRaw);
 
     // 3. Store the chunk back into Qdrant asynchronously via Qdrant MCP Tool
@@ -73,11 +79,15 @@ export async function runPRReview({ repo, prNumber }) {
 
   // 4. Format the final PR comment using the enhanced formatter (with suggestion blocks)
   console.log(`[Orchestrator] Formatting final review comment...`);
+  const tokenReport = tokens.getReport();
+  console.log(tokens.formatReport());
+
   const finalCommentBody = formatReviewComment(allReviews, {
     repo,
     prNumber,
     reviewedAt: new Date().toISOString(),
-    prSummary
+    prSummary,
+    tokenReport
   });
 
   // 5. Post the comment back to GitHub via GitHub MCP Tool
@@ -88,7 +98,7 @@ export async function runPRReview({ repo, prNumber }) {
     body: finalCommentBody
   });
 
-  return { reviews: allReviews, diffText, prSummary };
+  return { reviews: allReviews, diffText, prSummary, tokenReport };
 }
 
 async function generatePRSummary(fullDiff) {

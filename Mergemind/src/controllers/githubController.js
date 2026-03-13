@@ -63,7 +63,8 @@ export async function handlePRWebhook(req, res) {
       repo,
       prNumber,
       diffText: result.diffText,
-      issues: allParsed
+      issues: allParsed,
+      tokenReport: result.tokenReport
     });
 
     // Emit parsed reviews to dashboard
@@ -76,7 +77,7 @@ export async function handlePRWebhook(req, res) {
     });
 
     // Record stats for CTO dashboard
-    recordReview({ repo, prNumber, issues: allParsed });
+    recordReview({ repo, prNumber, issues: allParsed, tokenReport: result.tokenReport });
 
     io.emit("review-update", { 
       repo, 

@@ -4,12 +4,13 @@ const reviewHistory = [];
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
-export function recordReview({ repo, prNumber, issues, reviewedAt }) {
+export function recordReview({ repo, prNumber, issues, reviewedAt, tokenReport }) {
   reviewHistory.push({
     repo,
     prNumber,
     issues: Array.isArray(issues) ? issues : [],
     reviewedAt: reviewedAt || new Date().toISOString(),
+    tokenReport: tokenReport || null
   });
 }
 
@@ -40,6 +41,19 @@ export function getStats() {
 
   // Hours saved estimate: ~0.5 hr per PR reviewed
   const hoursSaved = parseFloat((totalPRs * 0.5).toFixed(1));
+
+  // Token usage aggregation
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCost = 0;
+
+  reviewHistory.forEach(r => {
+    if (r.tokenReport) {
+      totalInputTokens += r.tokenReport.total?.input || 0;
+      totalOutputTokens += r.tokenReport.total?.output || 0;
+      totalCost += parseFloat(r.tokenReport.total?.cost?.replace('$', '') || 0);
+    }
+  });
 
   // Daily breakdown (last 7 days)
   const now = Date.now();
@@ -92,12 +106,20 @@ export function getStats() {
     byCategory,
     topVulnerability: topVuln ? { title: topVuln[0], count: topVuln[1] } : null,
     hoursSaved,
+    tokenUsage: {
+      totalInput: totalInputTokens,
+      totalOutput: totalOutputTokens,
+      totalGrand: totalInputTokens + totalOutputTokens,
+      totalCost: `$${totalCost.toFixed(4)}`
+    },
     daily,
     leaderboard,
     today: {
       prs: todayReviews.length,
       issues: todayIssues,
       hoursSaved: todayHoursSaved,
+      tokens: todayReviews.reduce((sum, r) => sum + (r.tokenReport?.total?.grand || 0), 0),
+      cost: `$${todayReviews.reduce((sum, r) => sum + parseFloat(r.tokenReport?.total?.cost?.replace('$', '') || 0), 0).toFixed(4)}`
     },
   };
 }
