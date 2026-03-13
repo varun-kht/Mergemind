@@ -1,0 +1,12 @@
+﻿
+C:\Users\mchan\OneDrive\Desktop\MergeMind\frontend\src\components\Navbar.jsx
+  1:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\mchan\OneDrive\Desktop\MergeMind\frontend\src\pages\Dashboard.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\mchan\OneDrive\Desktop\MergeMind\frontend\src\pages\LandingPage.jsx
+  1:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+Γ£û 3 problems (3 errors, 0 warnings)
+
