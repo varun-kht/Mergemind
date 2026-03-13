@@ -3,48 +3,49 @@ import { processDiff } from "../services/diffService.js";
 import { reviewCode } from "../services/aiReviewService.js";
 
 export async function handlePRWebhook(req, res) {
+  const event = req.headers["x-github-event"];
+
+  if (event !== "pull_request") {
+    return res.status(200).send("Event ignored");
+  }
+
+  const { action, pull_request, repository } = req.body;
+
+  if (action !== "opened" && action !== "synchronize") {
+    return res.status(200).send("Event ignored");
+  }
+
+  const repo = repository.full_name;
+  const prNumber = pull_request.number;
+
+  // ✅ Respond to GitHub immediately so it doesn't timeout or retry
+  res.status(200).json({ message: "Review started", repo, prNumber });
+
+  // 🔁 Run the full pipeline in the background
   try {
-    const action = req.body.action;
-
-    if (action !== "opened" && action !== "synchronize") {
-      return res.status(200).send("Event ignored");
-    }
-
-    const repo = req.body.repository.full_name;
-    const prNumber = req.body.pull_request.number;
-
-    console.log(`Processing PR #${prNumber}`);
+    console.log(`🔍 Reviewing PR #${prNumber} in ${repo}...`);
 
     const diff = await getPRDiff(repo, prNumber);
     const chunks = processDiff(diff);
-    const reviews = [];
+    console.log(`📦 ${chunks.length} chunk(s) to review`);
 
+    const reviews = [];
     for (let index = 0; index < chunks.length; index++) {
-      const chunk = chunks[index];
-      const result = await reviewCode(chunk, {
-        repo,
-        prNumber,
-        chunkIndex: index
-      });
+      console.log(`  → Chunk ${index + 1}/${chunks.length}`);
+      const result = await reviewCode(chunks[index], { repo, prNumber, chunkIndex: index });
       reviews.push(result);
     }
 
-    console.log("AI Reviews:", reviews);
-
-    // -------------------------------
-    // ✅ Auto-post review to GitHub
-    // -------------------------------
-    const formattedComment = formatReviewComment(reviews);
-
-    await postPRComment(repo, prNumber, formattedComment);
-
-    res.status(200).json({
-      message: "PR processed and AI review posted",
-      reviews
+    const comment = formatReviewComment(reviews, {
+      repo,
+      prNumber,
+      reviewedAt: new Date().toISOString(),
     });
 
+    await postPRComment(repo, prNumber, comment);
+    console.log(`✅ Review posted to ${repo}#${prNumber}`);
+
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Error processing PR");
+    console.error(`❌ Review failed for ${repo}#${prNumber}:`, error.message);
   }
 }
