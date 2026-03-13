@@ -1,0 +1,29 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@qdrant/js-client-rest": "^1.17.0",
+    "axios": "^1.13.6",
+    "bullmq": "^5.71.0",
+    "chromadb": "^3.3.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.1.1",
+    "ioredis": "^5.10.0",
+    "jsonwebtoken": "^9.0.3",
+    "openai": "^6.27.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.3.6"
+  }
+}

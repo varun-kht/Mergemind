@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+
+# environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# build output
+dist/
+build/
+
+# coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# editor folders
+.vscode/
+.idea/
+
+# temporary files
+tmp/
+temp/
+
+# ngrok
+.ngrok/
+
+# cache
+.cache/
+
+# test output
+test-results/
+
+# lock files (optional depending on team policy)
+# package-lock.json
+# yarn.lock
