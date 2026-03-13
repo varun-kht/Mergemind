@@ -22,6 +22,9 @@ export default function Navbar() {
           </Link>
           
           <div className="flex items-center gap-4">
+            <Link to="/team" className="text-text-muted hover:text-white transition-colors duration-200 text-sm font-medium">
+              Team Health
+            </Link>
             <a href="https://github.com/mchan/MergeMind" target="_blank" rel="noreferrer" className="text-text-muted hover:text-white transition-colors duration-200">
               <Github className="w-5 h-5" />
             </a>

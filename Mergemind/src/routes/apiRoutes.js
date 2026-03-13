@@ -3,11 +3,17 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { getPRDiff } from '../services/githubService.js';
+import { getStats } from '../services/statsService.js';
 
 dotenv.config();
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'mergemind-super-secret-key-123';
+
+// ── Public routes (no auth required) ───────────────────────────────────────
+router.get('/stats', (_req, res) => {
+  res.json(getStats());
+});
 
 // Middleware to verify JWT and extract the internal GitHub token
 const requireAuth = (req, res, next) => {

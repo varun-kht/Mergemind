@@ -10,10 +10,10 @@ export async function getRagContextForChunk({ repo, prNumber, chunkIndex, text }
     .map(
       (item, idx) =>
         `# Context Match ${idx + 1}\n` +
-        `Repo: ${repo}\n` +
-        `PR: ${item.prNumber ?? "unknown"}, Chunk: ${item.chunkIndex ?? "unknown"}\n` +
-        `Score: ${item.score?.toFixed ? item.score.toFixed(3) : item.score}\n` +
-        `Text:\n${item.text}\n`
+        `Source Repo: ${item.repo || repo}\n` +
+        `PR: #${item.prNumber ?? "unknown"}, Chunk: ${item.chunkIndex ?? "unknown"}\n` +
+        `Similarity Score: ${item.score?.toFixed ? item.score.toFixed(3) : item.score}\n` +
+        `Previous Review/Code:\n${item.text}\n`
     )
     .join("\n----------------\n\n");
 

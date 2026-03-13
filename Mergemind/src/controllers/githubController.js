@@ -1,6 +1,7 @@
 import { getPRDiff, postPRComment, formatReviewComment } from "../services/githubService.js";
 import { processDiff } from "../services/diffService.js";
 import { reviewCode } from "../services/aiReviewService.js";
+import { recordReview } from "../services/statsService.js";
 
 export async function handlePRWebhook(req, res) {
   const event = req.headers["x-github-event"];
@@ -84,6 +85,19 @@ export async function handlePRWebhook(req, res) {
 
     try {
       await postPRComment(repo, prNumber, comment);
+
+      // Record review stats for the CTO dashboard
+      const allParsed = reviews.flatMap(r => {
+        try {
+          const cleaned = r.trim().startsWith("```json")
+            ? r.replace(/^```json\s*/, "").replace(/\s*```$/, "")
+            : r;
+          const arr = JSON.parse(cleaned);
+          return Array.isArray(arr) ? arr : [];
+        } catch { return []; }
+      });
+      recordReview({ repo, prNumber, issues: allParsed });
+
       io.emit("review-update", { 
         repo, 
         prNumber, 

@@ -392,8 +392,29 @@ export default function Dashboard() {
                     <p className="opacity-90 mt-1 mb-2 leading-relaxed">{rev.description}</p>
                     {rev.suggestion && (
                        <div className="mt-2 bg-background/50 rounded-lg p-2 text-xs opacity-90 border border-current/10">
-                          <span className="font-semibold block mb-1">Suggestion:</span>
+                          <span className="font-semibold block mb-1">💡 Suggestion:</span>
                           {rev.suggestion}
+                       </div>
+                    )}
+                    {rev.fix && (
+                       <div className="mt-2 bg-background/80 rounded-lg overflow-hidden border border-emerald-500/20">
+                          <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-500/20">
+                            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                              ✅ Suggested Fix — Copy & Replace
+                            </span>
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(rev.fix);
+                              }}
+                              className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors font-medium flex items-center gap-1"
+                            >
+                              <Copy className="w-3 h-3" />
+                              Copy Fix
+                            </button>
+                          </div>
+                          <pre className="p-3 text-xs overflow-x-auto text-emerald-300/90 leading-relaxed whitespace-pre-wrap">
+                            {rev.fix}
+                          </pre>
                        </div>
                     )}
                   </motion.div>

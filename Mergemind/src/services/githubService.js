@@ -136,7 +136,7 @@ This diff looks clean across all ${reviews.length} chunk${reviews.length !== 1 ?
           : "N/A";
         const lineRef = issue.line != null ? `Line ${issue.line}` : "General";
 
-        return `### ${idx + 1}. ${issue.title}
+        let block = `### ${idx + 1}. ${issue.title}
 
 | Field | Detail |
 |-------|--------|
@@ -149,6 +149,17 @@ ${issue.description}
 
 **Suggested Fix**
 ${issue.suggestion}`;
+
+        // Render the AI-generated fix as a GitHub suggestion block (enables one-click "Apply")
+        if (issue.fix) {
+          block += `
+
+\`\`\`suggestion
+${issue.fix}
+\`\`\``;
+        }
+
+        return block;
       }).join("\n\n---\n\n");
 
       return `${heading}\n\n${issueItems}`;
