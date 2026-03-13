@@ -17,14 +17,19 @@ export async function handlePRWebhook(req, res) {
 
     const diff = await getPRDiff(repo, prNumber);
 
-    const chunks = processDiff(diff);
+  const chunks = processDiff(diff);
 
-    const reviews = [];
+  const reviews = [];
 
-    for (const chunk of chunks) {
-      const result = await reviewCode(chunk);
-      reviews.push(result);
-    }
+  for (let index = 0; index < chunks.length; index++) {
+    const chunk = chunks[index];
+    const result = await reviewCode(chunk, {
+      repo,
+      prNumber,
+      chunkIndex: index
+    });
+    reviews.push(result);
+  }
 
     console.log("AI Reviews:", reviews);
 
