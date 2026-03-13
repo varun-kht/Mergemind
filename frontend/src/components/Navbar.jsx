@@ -22,8 +22,17 @@ export default function Navbar() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <Link to="/team" className="text-text-muted hover:text-white transition-colors duration-200 text-sm font-medium">
+            <Link 
+              to="/team" 
+              className={`text-sm font-medium transition-colors hover:text-blue-400 ${location.pathname === '/team' ? 'text-blue-400' : 'text-foreground/80'}`}
+            >
               Team Health
+            </Link>
+            <Link 
+              to="/history" 
+              className={`text-sm font-medium transition-colors hover:text-blue-400 ${location.pathname === '/history' ? 'text-blue-400' : 'text-foreground/80'}`}
+            >
+              Review History
             </Link>
             <a href="https://github.com/mchan/MergeMind" target="_blank" rel="noreferrer" className="text-text-muted hover:text-white transition-colors duration-200">
               <Github className="w-5 h-5" />

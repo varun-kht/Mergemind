@@ -1,7 +1,6 @@
-import { getPRDiff, postPRComment, formatReviewComment } from "../services/githubService.js";
-import { processDiff } from "../services/diffService.js";
-import { reviewCode } from "../services/aiReviewService.js";
+import { runPRReview } from '../mcp/client/orchestrator.js';
 import { recordReview } from "../services/statsService.js";
+import { saveReview } from "../services/reviewStore.js";
 
 export async function handlePRWebhook(req, res) {
   const event = req.headers["x-github-event"];
@@ -23,99 +22,70 @@ export async function handlePRWebhook(req, res) {
   // ✅ Respond to GitHub immediately
   res.status(200).json({ message: "Review started", repo, prNumber });
 
-  // 🔁 Background Pipeline
+  // 🔁 Background Pipeline — delegated to MCP Orchestrator
   try {
-    console.log(`🔍 Reviewing PR #${prNumber} in ${repo}...`);
+    console.log(`🔍 Reviewing PR #${prNumber} in ${repo} via MCP...`);
     
     // Notify Dashboard: Review Started
     io.emit("review-update", { 
       repo, 
       prNumber, 
-      status: "Initializing Analysis", 
+      status: "Initializing MCP Analysis", 
       progress: 10 
     });
 
-    const diff = await getPRDiff(repo, prNumber);
-    const chunks = processDiff(diff);
-    console.log(`📦 ${chunks.length} chunk(s) to review`);
-
-    const reviews = [];
-    for (let index = 0; index < chunks.length; index++) {
-      console.log(`  → Chunk ${index + 1}/${chunks.length}`);
-      
-      // Notify Dashboard: Processing specific chunk with its contents
-      io.emit("review-update", { 
-        repo, 
-        prNumber, 
-        status: `Reviewing Chunk ${index + 1}/${chunks.length}`, 
-        progress: Math.round(10 + ((index + 1) / chunks.length) * 80),
-        log: `Analyzing chunk ${index + 1}...`,
-        currentChunk: chunks[index]
-      });
-
-      const result = await reviewCode(chunks[index], { repo, prNumber, chunkIndex: index });
-      reviews.push(result);
-      
-      // Notify Dashboard: Finished chunk review
-      let parsedReview = [];
-      try {
-         const cleaned = result.trim().startsWith("```json")
-          ? result.replace(/^```json\s*/, "").replace(/\s*```$/, "")
-          : result;
-         parsedReview = JSON.parse(cleaned);
-      } catch (e) {
-         parsedReview = [];
-      }
-
-      io.emit("review-update", {
-        repo,
-        prNumber,
-        status: `Finished Chunk ${index + 1}`,
-        progress: Math.round(10 + ((index + 1) / chunks.length) * 80),
-        newReviews: parsedReview,
-        chunkDiff: chunks[index]
-      });
-    }
-
-    const comment = formatReviewComment(reviews, {
-      repo,
-      prNumber,
-      reviewedAt: new Date().toISOString(),
+    io.emit("review-update", { 
+      repo, 
+      prNumber, 
+      status: "Running MCP Orchestrator (Diff → RAG → AI → GitHub)", 
+      progress: 30 
     });
 
-    try {
-      await postPRComment(repo, prNumber, comment);
+    // Delegate entire pipeline to MCP orchestrator
+    const result = await runPRReview({ repo, prNumber });
 
-      // Record review stats for the CTO dashboard
-      const allParsed = reviews.flatMap(r => {
-        try {
-          const cleaned = r.trim().startsWith("```json")
-            ? r.replace(/^```json\s*/, "").replace(/\s*```$/, "")
-            : r;
-          const arr = JSON.parse(cleaned);
-          return Array.isArray(arr) ? arr : [];
-        } catch { return []; }
-      });
-      recordReview({ repo, prNumber, issues: allParsed });
+    // Parse reviews for stats + dashboard 
+    const allParsed = (result.reviews || []).flatMap(r => {
+      try {
+        const raw = typeof r === 'string' ? r : JSON.stringify(r);
+        const cleaned = raw.trim().startsWith("```json")
+          ? raw.replace(/^```json\s*/, "").replace(/\s*```$/, "")
+          : raw;
+        const arr = JSON.parse(cleaned);
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    });
 
-      io.emit("review-update", { 
-        repo, 
-        prNumber, 
-        status: "Review Posted to GitHub", 
-        progress: 100 
-      });
-      console.log(`✅ Review posted to ${repo}#${prNumber}`);
-    } catch (e) {
-       io.emit("review-update", { 
-        repo, 
-        prNumber, 
-        status: "Finished AI Review, but GitHub Comment Failed (Check Server Logs)", 
-        progress: 100 
-      });
-    }
+    // Save full review to persistent store
+    saveReview({
+      repo,
+      prNumber,
+      diffText: result.diffText,
+      issues: allParsed
+    });
+
+    // Emit parsed reviews to dashboard
+    io.emit("review-update", {
+      repo,
+      prNumber,
+      status: "AI Review Complete",
+      progress: 90,
+      newReviews: allParsed,
+    });
+
+    // Record stats for CTO dashboard
+    recordReview({ repo, prNumber, issues: allParsed });
+
+    io.emit("review-update", { 
+      repo, 
+      prNumber, 
+      status: "Review Posted to GitHub", 
+      progress: 100 
+    });
+    console.log(`✅ MCP review posted to ${repo}#${prNumber}`);
 
   } catch (error) {
-    console.error(`❌ Review failed for ${repo}#${prNumber}:`, error.message);
+    console.error(`❌ MCP review failed for ${repo}#${prNumber}:`, error.message);
     io.emit("review-update", { repo, prNumber, status: `Error: ${error.message}`, progress: 0 });
   }
 }

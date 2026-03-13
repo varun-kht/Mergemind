@@ -15,6 +15,18 @@ router.get('/stats', (_req, res) => {
   res.json(getStats());
 });
 
+import { getAllReviews, getReviewById } from '../services/reviewStore.js';
+
+router.get('/reviews', (_req, res) => {
+  res.json(getAllReviews());
+});
+
+router.get('/reviews/:id', (req, res) => {
+  const review = getReviewById(req.params.id);
+  if (!review) return res.status(404).json({ error: "Review not found" });
+  res.json(review);
+});
+
 // Middleware to verify JWT and extract the internal GitHub token
 const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
