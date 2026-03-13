@@ -1,4 +1,4 @@
-import { getPRDiff } from "../services/githubService.js";
+import { getPRDiff, postPRComment , formatReviewComment} from "../services/githubService.js";
 import { processDiff } from "../services/diffService.js";
 import { reviewCode } from "../services/aiReviewService.js";
 
@@ -16,25 +16,30 @@ export async function handlePRWebhook(req, res) {
     console.log(`Processing PR #${prNumber}`);
 
     const diff = await getPRDiff(repo, prNumber);
+    const chunks = processDiff(diff);
+    const reviews = [];
 
-  const chunks = processDiff(diff);
-
-  const reviews = [];
-
-  for (let index = 0; index < chunks.length; index++) {
-    const chunk = chunks[index];
-    const result = await reviewCode(chunk, {
-      repo,
-      prNumber,
-      chunkIndex: index
-    });
-    reviews.push(result);
-  }
+    for (let index = 0; index < chunks.length; index++) {
+      const chunk = chunks[index];
+      const result = await reviewCode(chunk, {
+        repo,
+        prNumber,
+        chunkIndex: index
+      });
+      reviews.push(result);
+    }
 
     console.log("AI Reviews:", reviews);
 
+    // -------------------------------
+    // ✅ Auto-post review to GitHub
+    // -------------------------------
+    const formattedComment = formatReviewComment(reviews);
+
+    await postPRComment(repo, prNumber, formattedComment);
+
     res.status(200).json({
-      message: "PR processed",
+      message: "PR processed and AI review posted",
       reviews
     });
 
