@@ -1,2 +1,1 @@
-# final_lap_mcp
-git_mcp_rag_based_reviewer
+Happy Hacking cuties
