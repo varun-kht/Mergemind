@@ -3,6 +3,8 @@ import { chunkDiff } from "../../utils/chunkDiff.js";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import { formatReviewComment } from "../../services/githubService.js";
+import { generatePRSummary } from "../../services/aiReviewService.js";
+import { getPRDiff, postSummaryComment } from "../../services/githubService.js";
 
 dotenv.config();
 
@@ -29,6 +31,16 @@ export async function runPRReview({ repo, prNumber }) {
 
   if (!diffText || diffText.trim() === "") {
     return { reviews: [] };
+  }
+
+  // --- Generate and post a high-level PR summary comment ---
+  try {
+    console.log(`[Orchestrator] Generating PR summary for ${repo}#${prNumber}...`);
+    const summary = await generatePRSummary(diffText);
+    console.log(`[Orchestrator] Posting PR summary comment...`);
+    await postSummaryComment(repo, prNumber, summary);
+  } catch (err) {
+    console.warn(`[Orchestrator] Failed to generate or post PR summary: ${err.message}`);
   }
 
   const chunks = chunkDiff(diffText, 3000);
