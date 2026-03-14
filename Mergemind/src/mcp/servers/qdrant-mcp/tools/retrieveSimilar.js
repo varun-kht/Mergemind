@@ -12,13 +12,24 @@ export const retrieveSimilarTool = {
       
       let formatted = "";
       if (similar.length) {
-        formatted = similar.map((item, idx) =>
-          `# Context Match ${idx + 1}\n` +
-          `Repo: ${args.repo}\n` +
-          `PR: ${item.prNumber ?? "unknown"}, Chunk: ${item.chunkIndex ?? "unknown"}\n` +
-          `Score: ${item.score?.toFixed ? item.score.toFixed(3) : item.score}\n` +
-          `Text:\n${item.text}\n`
-        ).join("\n----------------\n\n");
+        formatted = similar
+          .map((item, idx) => {
+            const provenance = [
+              `Source: ${item.repo ?? args.repo} · PR #${item.prNumber ?? "?"} · Chunk ${item.chunkIndex ?? "?"}`,
+              item.sourceUrl ? `URL: ${item.sourceUrl}` : null,
+              item.filePaths?.length ? `Files: ${item.filePaths.join(", ")}` : null,
+              item.createdAt ? `Indexed: ${item.createdAt.slice(0, 10)}` : null,
+              `Score: ${item.score?.toFixed ? item.score.toFixed(3) : item.score}`
+            ]
+              .filter(Boolean)
+              .join(" | ");
+            const pastFindings =
+              item.reviewOutcome?.length
+                ? `\n**Past review findings:** ${item.reviewOutcome.map((r) => `${r.severity}: ${r.title}`).join("; ")}\n`
+                : "";
+            return `# Context Match ${idx + 1}\n**Provenance:** ${provenance}${pastFindings}\n**Text:\n**${item.text}\n`;
+          })
+          .join("\n----------------\n\n");
       }
 
       return {

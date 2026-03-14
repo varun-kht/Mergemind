@@ -11,7 +11,8 @@ export const storeChunkTool = {
         repo: args.repo,
         prNumber: args.prNumber,
         chunkIndex: args.chunkIndex,
-        text: args.text
+        text: args.text,
+        reviewOutcome: args.reviewOutcome
       });
       return {
         content: [{ type: "text", text: "Successfully indexed chunk" }]

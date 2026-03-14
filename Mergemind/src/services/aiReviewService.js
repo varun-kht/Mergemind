@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import dotenv from "dotenv";
 import { getRagContextForChunk, storeChunkInRag } from "./ragService.js";
+import { parseReviewContentToOutcome } from "../rag/extractProvenance.js";
 
 dotenv.config();
 
@@ -101,13 +102,14 @@ Rules:
   const content = response.choices[0].message.content;
 
   if (repo && typeof prNumber !== "undefined") {
-    // Fire-and-forget indexing; do not block response on RAG storage.
+    const reviewOutcome = parseReviewContentToOutcome(content);
     storeChunkInRag({
       repo,
       prNumber,
       chunkIndex: typeof chunkIndex === "number" ? chunkIndex : 0,
-      text: diffChunk
-    }).catch(err => {
+      text: diffChunk,
+      reviewOutcome
+    }).catch((err) => {
       console.warn("[RAG] Failed to index PR chunk:", err.message);
     });
   }

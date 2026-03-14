@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "github-mcp": {
+      "command": "node",
+      "args": ["E:/final-merge/Mergemind/src/mcp/servers/github-mcp/index.js"],
+      "cwd": "E:/final-merge/Mergemind"
+    },
+    "qdrant-mcp": {
+      "command": "node",
+      "args": ["E:/final-merge/Mergemind/src/mcp/servers/qdrant-mcp/index.js"],
+      "cwd": "E:/final-merge/Mergemind"
+    }
+  }
+}

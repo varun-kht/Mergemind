@@ -22,6 +22,16 @@ export const postReviewCommentSchema = z.object({
   body: z.string().describe("The markdown formatted review comment body")
 });
 
+export const listPullRequestsSchema = z.object({
+  repo: z.string().describe("The full name of the repository (e.g. 'owner/repo')"),
+  state: z.enum(["open", "closed", "all"]).optional().describe("Filter by PR state (default: open)")
+});
+
+export const getPrCommitsSchema = z.object({
+  repo: z.string().describe("The full name of the repository (e.g. 'owner/repo')"),
+  prNumber: z.number().describe("The pull request number")
+});
+
 // Qdrant MCP Tool Schemas
 export const retrieveSimilarSchema = z.object({
   repo: z.string().describe("The full name of the repository"),
@@ -33,7 +43,18 @@ export const storeChunkSchema = z.object({
   repo: z.string().describe("The full name of the repository"),
   prNumber: z.number().describe("The pull request number"),
   chunkIndex: z.number().describe("The chunk positional index in the PR"),
-  text: z.string().describe("The code diff chunk text")
+  text: z.string().describe("The code diff chunk text"),
+  reviewOutcome: z
+    .array(
+      z.object({
+        severity: z.string(),
+        category: z.string(),
+        title: z.string(),
+        description: z.string().optional()
+      })
+    )
+    .optional()
+    .describe("Optional AI review findings for provenance")
 });
 
 export const searchByRepoSchema = z.object({

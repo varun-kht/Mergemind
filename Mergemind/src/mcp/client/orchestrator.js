@@ -71,16 +71,26 @@ export async function runPRReview({ repo, prNumber }) {
     });
   }
 
-  // 4. Format the final PR comment using the enhanced formatter (with suggestion blocks)
+  // 4. Fetch deduped similar past issues from RAG for "Similar issue: ..." section
+  const { getDedupedSimilarIssues } = await import("../services/ragService.js");
+  let similarPastIssues = [];
+  try {
+    similarPastIssues = await getDedupedSimilarIssues({ repo, diffText, topK: 10 });
+  } catch (e) {
+    console.warn("[Orchestrator] Could not fetch similar past issues:", e.message);
+  }
+
+  // 5. Format the final PR comment (with similar past issues section)
   console.log(`[Orchestrator] Formatting final review comment...`);
   const finalCommentBody = formatReviewComment(allReviews, {
     repo,
     prNumber,
     reviewedAt: new Date().toISOString(),
-    prSummary
+    prSummary,
+    similarPastIssues
   });
 
-  // 5. Post the comment back to GitHub via GitHub MCP Tool
+  // 6. Post the comment back to GitHub via GitHub MCP Tool
   console.log(`[Orchestrator] Posting comment to GitHub...`);
   await callMcpTool("postReviewComment", {
     repo,

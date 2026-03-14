@@ -13,9 +13,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'mergemind-super-secret-key-123';
 
 // Step 1: Redirect user to GitHub OAuth login
 router.get('/login', (req, res) => {
+  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    console.error('Missing GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET in .env');
+    return res.status(500).send('OAuth not configured. Add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to Mergemind/.env');
+  }
   const redirectUri = `http://localhost:3000/auth/github/callback`;
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=repo`;
-  
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo`;
+
   res.redirect(githubAuthUrl);
 });
 
